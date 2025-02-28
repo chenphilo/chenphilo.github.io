@@ -1,0 +1,48 @@
+.container {
+    position: relative;
+}
+
+.background {
+    background-image: url('../media/Solvay_conference_1927_dark.jpg');
+    background-size: cover;/*充满屏幕*/
+    min-height: 100vh; /* 最小高度为视窗高度 */
+    /* height: auto; /*展开超过100vh时可以补全 */
+    background-attachment: fixed;
+    z-index: -100; /* 确保背景在文本下面 */
+}
+
+body, html {
+    color: white; /* 设置所有文本颜色为白色 */
+    margin: 0;
+    padding: 0;
+  }
+  
+.autocontainer{
+    min-height: 200px;
+    height: auto;
+}
+
+.subtitle {
+    font-size: 15px;
+    color: rgba(255, 165, 117, 0.682);
+}
+
+button {
+    border: 1px solid white;
+    border-radius: 20px;
+    background-color: transparent;
+    color: white;
+    padding: 0px 10px;
+    transition: all 0.3s ease;
+  }
+  
+button:hover {
+    background-color: white;
+    color: black;
+    cursor: pointer;
+}
+
+.contentback{
+    padding: 1px 10px;
+    background-color: rgba(0, 0, 0, 0.49);
+}
