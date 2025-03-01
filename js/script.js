@@ -1,4 +1,4 @@
-//推特相关
+//随机名言
 var toggleButton = document.querySelector('.togglebutton');
 var twitterbox = document.querySelector('#twitterbox');
 
@@ -65,4 +65,23 @@ function easeInOutQuad(t, b, c, d) {
 
 document.querySelector('.menu-toggle').addEventListener('click', function() {
   document.querySelector('.nav-menu').classList.toggle('active');
+});
+
+// 监听窗口大小变化
+const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+
+if (viewportWidth <= 768) {
+    document.body.classList.add('mobile');
+    console.log("检测到移动设备");
+} else {
+    document.body.classList.remove('mobile');
+    console.log("检测到桌面设备");
+}
+window.addEventListener('resize', function() {
+    const newWidth = window.innerWidth || document.documentElement.clientWidth;
+    if (newWidth <= 768) {
+        document.body.classList.add('mobile');
+    } else {
+        document.body.classList.remove('mobile');
+    }
 });
