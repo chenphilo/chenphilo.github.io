@@ -1,0 +1,72 @@
+/* Mobile-specific styles for screens up to 768px */
+@media screen and (max-width: 768px) {
+    /* Container adjustments */
+    .container {
+        position: relative;
+        width: 100%; /* Ensure full width */
+    }
+
+    /* Background */
+    .background {
+        background-image: url('../media/Solvay_conference_1927_dark.jpg');
+        background-size: cover;
+        min-height: 100vh; /* Keep minimum height */
+        background-attachment: scroll; /* Fixed doesn’t work well on mobile */
+        z-index: -100;
+        opacity: 0.9;
+    }
+
+    /* Body and HTML */
+    body, html {
+        color: white;
+        margin: 0;
+        padding: 0;
+        font-size: 16px; /* Base font size for better scaling */
+    }
+
+    /* Autocontainer */
+    .autocontainer {
+        min-height: 150px; /* Slightly reduce min-height for mobile */
+        height: auto;
+        padding: 5px; /* Add some padding */
+    }
+    .autocontainer, .contentback {
+        overflow-x: auto; /* Allow horizontal scrolling if needed */
+        word-wrap: break-word; /* Break long words */
+    }
+
+    /* Subtitle */
+    .subtitle {
+        font-size: 12px; /* Reduce font size */
+        color: rgba(255, 165, 117, 0.682);
+        line-height: 1.4; /* Improve readability */
+    }
+
+    /* Buttons */
+    button {
+        border: 1px solid white;
+        border-radius: 15px; /* Slightly smaller radius */
+        background-color: transparent;
+        color: white;
+        padding: 5px 8px; /* Reduce padding for smaller touch targets */
+        font-size: 14px; /* Smaller text */
+        transition: all 0.3s ease;
+    }
+
+    button:hover {
+        background-color: white;
+        color: black;
+        cursor: pointer;
+    }
+
+    button:active {
+        background-color: rgba(255, 255, 255, 0.8);
+        color: black;
+    }
+
+    /* Content background */
+    .contentback {
+        padding: 5px 8px; /* Reduce padding */
+        background-color: rgba(0, 0, 0, 0.49);
+    }
+}

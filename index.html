@@ -2,9 +2,10 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<meta name="viewport" content="width=1900">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<script src = "js/viewport.js"></script>
 	<link rel="stylesheet" type="text/css" href="css/style.css">
+	<link rel="stylesheet" media="screen and (max-width: 768px)" href="css/mobile.css">
 	<title>MyhomePage</title>
 </head>
 <body>
@@ -12,11 +13,12 @@
 		<div class="background">
 			<div class="right-father--container"> 	
 				<header>
-					<nav>
+					<button class="menu-toggle">☰</button>
+					<nav class="nav-menu">
 						<ul>
 							<li><a href="#Home" onclick="smoothScroll('#Home')">Title</a></li>
-							<li><a href="#Works"  onclick="smoothScroll('#Works')">Works</a></li>
-							<li><a href="#Diary"  onclick="smoothScroll('#Diary')">Diary</a></li>
+							<li><a href="#Works" onclick="smoothScroll('#Works')">Works</a></li>
+							<li><a href="#Diary" onclick="smoothScroll('#Diary')">Diary</a></li>
 							<li><a href="#Aboutme" onclick="smoothScroll('#Aboutme')">Aboutme</a></li>
 						</ul>
 					</nav>
@@ -28,12 +30,12 @@
 				</section><br><br>
                 <section id = "Works" class="Works">
 					<h2>Ideas of my Works</h2>
-					<iframe allowtransparency="true" frameborder="0" scrolling="no" style="border: none; height: 500px; width: 90%;"  src="techlog-index.html"></iframe><br>
+					<iframe allowtransparency="true" frameborder="0" scrolling="no" style="border: none; height: 90%; width: 90%;"  src="techlog-index.html"></iframe><br>
 					<button class="roundbutton" style="float: right; margin-right: 150px;"onclick="window.location.href='techlog-index-full.html'">full page</button><br> 
 				</section><br><br>
 				<section id = "Diary" class="block">
 					<h2>Can't stop Arguments</h2>
-					<iframe allowtransparency="true" frameborder="0" scrolling="no" style="border: none; height: 500px; width: 90%;"  src="blog-index.html"></iframe><br>
+					<iframe allowtransparency="true" frameborder="0" scrolling="no" style="border: none; height: 90%; width: 90%;"  src="blog-index.html"></iframe><br>
 					<button class="roundbutton" style="float: right; margin-right: 150px;"onclick="window.location.href='blog-index-full.html'">full page</button><br> 
 				</section><br><br>
 				<section id="Aboutme" class="block">
@@ -42,7 +44,7 @@
 				</section><br><br>
                 <div class="fixed-twitter">
                     <div id = "twitterbox" ></div>
-                    <button class="togglebutton">Random words</button><br>
+					<button class="togglebutton">Random words</button>
                 </div>
 			</div>
 		</div>

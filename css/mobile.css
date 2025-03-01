@@ -1,0 +1,158 @@
+/* Mobile-specific styles for screens up to 768px */
+@media screen and (max-width: 768px) {
+    /* Navigation adjustments */
+    nav ul {
+        position: static; /* Remove fixed positioning for mobile */
+        width: 100%; /* Full width */
+        background-color: #a93750; /* Solid color for better visibility */
+        display: flex;
+        flex-direction: column; /* Stack items vertically */
+        top: 0;
+    }
+
+    nav li {
+        flex: 1; /* Equal height for stacked items */
+        text-align: center;
+        padding: 10px 0; /* Add vertical spacing */
+    }
+
+    nav li a {
+        padding: 10px; /* Reduce padding */
+        font-size: 18px; /* Smaller font for mobile */
+    }
+
+    nav+.placeholder {
+        height: 0; /* Remove placeholder on mobile since nav is not fixed */
+    }
+
+    /* Body and container adjustments */
+    body {
+        padding: 0;
+    }
+
+    .container {
+        width: 100%; /* Full width */
+    }
+
+    .right-father--container {
+        margin-left: 0; /* Remove left margin to use full width */
+        padding: 10px; /* Add some padding */
+    }
+
+    /* Background */
+    .background {
+        background-attachment: scroll; /* Fixed background doesn't work well on mobile */
+        height: auto;
+    }
+
+    /* Section blocks */
+    .block {
+        padding: 10px;
+        height: auto;
+    }
+
+    /* Typography */
+    h1 {
+        font-size: 40px; /* Reduce size for mobile */
+        padding: 10px;
+    }
+
+    h2 {
+        font-size: 28px; /* Reduce size */
+    }
+
+    p {
+        font-size: 20px; /* Smaller text */
+        max-width: 100%; /* Full width */
+        padding: 5px;
+    }
+
+    .pxiao {
+        font-size: 14px; /* Smaller text */
+        padding: 5px;
+    }
+
+    /* Iframes (Works and Diary sections) */
+    iframe {
+        width: 100% !important; /* Override inline width */
+        height: 400px; /* Adjust height for mobile */
+    }
+
+    .roundbutton {
+        margin-right: 10px; /* Reduce margin */
+        font-size: 14px; /* Smaller text */
+        padding: 5px 15px; /* Adjust padding */
+    }
+
+    /* Fixed Twitter box */
+    .fixed-twitter {
+        width: 100%; /* Full width on mobile */
+        left: 0;
+        top: auto;
+        bottom: 0; /* Move to bottom for better usability */
+        padding: 5px;
+    }
+
+    .fixed-twitter .togglebutton {
+        width: 200px; /* Reduce width */
+        height: 40px; /* Smaller button */
+        font-size: 16px;
+    }
+
+    #twitterbox {
+        font-size: 24px; /* Smaller text */
+        padding: 5px;
+    }
+
+    /* Live2D container (if applicable) */
+    .live2d-container {
+        width: 150px; /* Reduce width */
+        height: 200px; /* Reduce height */
+    }
+
+    #live2d {
+        width: 150px;
+        height: 200px;
+    }
+
+    /* Project grid (if used) */
+    .project-container {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns instead of 4 */
+        grid-gap: 10px;
+    }
+
+    .project {
+        width: 100%; /* Full width of grid cell */
+        height: 200px; /* Reduce height */
+        margin: 5px;
+    }
+
+    .project::before {
+        font-size: 18px; /* Smaller text */
+        padding: 10px;
+        width: 100%;
+    }
+}
+
+.menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    padding: 10px;
+}
+
+@media screen and (max-width: 768px) {
+    .menu-toggle {
+        display: block;
+    }
+
+    .nav-menu {
+        display: none;
+    }
+
+    .nav-menu.active {
+        display: block;
+    }
+}
