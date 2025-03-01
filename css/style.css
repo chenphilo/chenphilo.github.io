@@ -44,9 +44,9 @@ nav li a {
     text-decoration: none;
 }
 
-nav li a:hover {
-    background-color: #111;
-    border: 2px solid rgb(126, 0, 0);
+nav li a:hover { /* 主题 */
+    background-color: #03071e;
+    border: 2px solid #6a040f;
 }
 
 /* body部分 */
@@ -94,10 +94,10 @@ body {
     z-index: 999;
 }
 
-.fixed-twitter .togglebutton {
+ .fixed-twitter .togglebutton {
     border: 1px solid white;
     border-radius: 20px;
-    background-color: #7d3760;
+    background-color: #964792;/*主题 */
     color: white;
     font-size: larger;
     padding: 0px 10px;
@@ -111,7 +111,7 @@ body {
 }
 
 .fixed-twitter .togglebutton:hover {
-    background-color: #550000;
+    background-color: #370617;/*主题 */
 }
 
 #twitterbox {
@@ -176,7 +176,7 @@ h2 {
     font-family: 'LXGWWenKai', sans-serif;
     margin: 0;
     padding: 0;
-    color: rgb(255, 136, 73);
+    color: #e941bf; /* 主题 */
     text-align: center;
     font-size: 40px;
 }
