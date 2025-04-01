@@ -19,7 +19,7 @@
     background: transparent;
 }
 body, html {
-    color: white; /* 设置所有文本颜色为白色 */
+    color: rgb(255, 255, 255); /* 设置所有文本颜色为白色 */
     height: 100%;
     margin: 0;
     padding: 0;
@@ -28,10 +28,6 @@ button:hover {
     background-color: white;
     color: black;
     cursor: pointer;
-}
-#markdown-list {
-    margin: 0px;
-    padding: 30px; /* 这里只要不是零就能解决浏览器上方白边地问题  */
 }
 h1 {
     font-family: 'minzhao', sans-serif;
@@ -65,13 +61,52 @@ button {
     transition: all 0.3s ease;
 }
 .contentback{
+    color: rgb(0, 0, 0); /* 设置所有文本颜色为白色 */
     padding: 2px 50px;
-    background-color: rgba(0, 0, 0, 0.49);
+    background-color: rgba(255, 255, 255, 1);
     font-family: 'LXGWWenKai', sans-serif; /* 设置字体 */
     font-size: 20px; /* 设置字体大小 */
     line-height: 1.5; /* 设置行间距（1.5 倍行高） */
 }
-
+.contentback h1 {
+    text-align: center;
+    font-size: 40px;
+    color: rgb(0, 0, 0); /* 设置所有文本颜色为白色 */
+}
+.contentback ul {
+    margin: 0.5em 0;
+    padding-left: 20px;
+    list-style-type: disc;
+}
+.contentback ul ul {
+    list-style-type: circle;
+}
+.contentback ul ul ul {
+    list-style-type: square;
+}
+.contentback li {
+    margin: 0.2em 0;
+}
+.contentback li p {
+    margin: 0.2em 0;
+}
+.contentback code {
+    font-family: 'LXGWWenKai', sans-serif; /* 设置字体 */
+    background-color: #cecece; /* 灰色背景 */
+    padding: 2px 4px;          /* 内边距 */
+    border-radius: 4px;        /* 圆角 */
+    font-weight: normal;       /* 取消加粗 */
+}
+#markdown-list {
+    margin: 0; /* 移除 auto，避免与偏移冲突 */
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    max-width: 1200px; /* 容器最大宽度 */
+    width: 100%; /* 自适应父容器 */
+    position: relative; /* 为偏移提供定位上下文 */
+    left: calc(30%); /* 从左 30% 处偏移，使中心对齐 */
+}
 
 @media (max-width: 767px) {/* 手机端样式 */
     .container {
@@ -88,9 +123,18 @@ button {
     }
     .contentback {
         margin: 1px;
-        padding: 5px 12px; /* Reduce padding */
-        background-color: rgba(0, 0, 0, 0.49);
-        font-size: 18px; /* 设置字体大小 */
-        line-height: 1.3; /* 设置行间距（1.5 倍行高） */
+        padding: 5px 12px;
+        font-size: 18px;
+        line-height: 1.3;
+        width: 100%; /* 确保内容宽度占满容器 */
+        box-sizing: border-box; /* 防止 padding 导致溢出 */
+    }
+    #markdown-list {
+        margin: 0;
+        padding: 20px; /* 保留你设置的 padding */
+        width: 100%; /* 确保宽度占满 */
+        max-width: 100%; /* 移除 1200px 的限制，占满屏幕 */
+        left: 0; /* 移除偏移，让内容靠左对齐 */
+        box-sizing: border-box; /* 确保 padding 不撑大宽度 */
     }
 }

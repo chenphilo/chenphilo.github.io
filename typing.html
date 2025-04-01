@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>日语单词测试</title>
+    <style>
+        body {
+            background-color: black;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        .container {
+            text-align: center;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        .header {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .top-half {
+            height: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .bottom-half {
+            height: 40%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+        }
+        .word {
+            color: white;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .answer {
+            color: #ccc;
+            font-size: 24px;
+            margin-top: 20px;
+            display: none;
+        }
+        .input-box {
+            width: 200px;
+            height: 40px;
+            background-color: #666;
+            border: none;
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            outline: none;
+            margin-top: 20px;
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+        select {
+            background-color: #333;
+            color: white;
+            padding: 5px;
+            border: none;
+        }
+        .show-answer-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #444;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .show-answer-btn:active {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <select id="mode">
+                <option value="random">ランダム</option>
+                <option value="error">バツ率順</option>
+            </select>
+            <select id="fileSelector">
+                <option value="">選んで</option>
+                <!-- 文件选项将动态添加 -->
+            </select>
+        </div>
+        <div class="top-half">
+            <div class="word" id="wordDisplay">↑選んで</div>
+            <div class="answer" id="answerDisplay"></div>
+        </div>
+        <div class="bottom-half">
+            <input type="text" class="input-box" id="inputBox" disabled>
+            <button class="show-answer-btn" id="showAnswerBtn">答えを見る</button>
+        </div>
+    </div>
+
+    <script>
+        let wordsData = [];
+        let currentIndex = 0;
+        let currentMode = 'random';
+
+        // 加载文件列表
+        const fileSelector = document.getElementById('fileSelector');
+        fetch('data/typing/filelist.txt')
+            .then(response => {
+                if (!response.ok) throw new Error('FAIL LOADING');
+                return response.text();
+            })
+            .then(content => {
+                const files = content.split('\n').filter(line => line.trim());
+                files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file;
+                    option.textContent = file;
+                    fileSelector.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('FAIL LOADING:', error);
+                fileSelector.innerHTML = '<option value="">FAIL LOADING</option>';
+            });
+
+        // 文件选择事件
+        fileSelector.addEventListener('change', (e) => {
+            const selectedFile = e.target.value;
+            if (selectedFile) {
+                loadFile(selectedFile);
+            }
+        });
+
+        // 加载选中的文件
+        function loadFile(filename) {
+            fetch(`data/typing/${filename}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('FAIL LOADING');
+                    return response.text();
+                })
+                .then(content => {
+                    wordsData = content.split('\n')
+                        .filter(line => line.trim()) // 过滤空行
+                        .map(line => {
+                            const [riddle, answer, correct, total] = line.split(',')
+                                .map(part => part.replace(/\s/g, '')); // 移除每部分的空格
+                            return { 
+                                riddle, 
+                                answer, 
+                                correct: parseInt(correct) || 0, 
+                                total: parseInt(total) || 0 
+                            };
+                        });
+                    document.getElementById('inputBox').disabled = false;
+                    selectNextWord();
+                })
+                .catch(error => {
+                    console.error('FAIL LOADING:', error);
+                    document.getElementById('wordDisplay').textContent = 'FAIL LOADING';
+                    document.getElementById('inputBox').disabled = true;
+                });
+        }
+
+        function loadWord() {
+            document.getElementById('wordDisplay').textContent = wordsData[currentIndex].riddle;
+            document.getElementById('inputBox').value = '';
+            document.getElementById('answerDisplay').textContent = wordsData[currentIndex].answer;
+            document.getElementById('answerDisplay').style.display = 'none'; // 确保答案默认隐藏
+        }
+
+        function selectNextWord() {
+            if (wordsData.length === 0) return;
+            if (currentMode === 'random') {
+                currentIndex = Math.floor(Math.random() * wordsData.length);
+            } else {
+                // 按错误率排序
+                wordsData.sort((a, b) => {
+                    const rateA = a.total === 0 ? 0 : (a.total - a.correct) / a.total;
+                    const rateB = b.total === 0 ? 0 : (b.total - b.correct) / b.total;
+                    return rateB - rateA;
+                });
+                currentIndex = 0;
+            }
+            loadWord();
+        }
+
+        document.getElementById('inputBox').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const input = e.target.value.replace(/\s/g, ''); // 移除所有空格
+                const correctAnswer = wordsData[currentIndex].answer.replace(/\s/g, ''); // 移除正确答案中的所有空格
+                wordsData[currentIndex].total++;
+
+                if (input === correctAnswer) {
+                    wordsData[currentIndex].correct++;
+                    new Audio('media/correct.wav').play();
+                    selectNextWord();
+                } else {
+                    const inputBox = document.getElementById('inputBox');
+                    inputBox.value = '';
+                    inputBox.classList.add('shake');
+                    new Audio('media/wrong.wav').play();
+                    setTimeout(() => inputBox.classList.remove('shake'), 500);
+                }
+                console.log('更新后的数据:', wordsData);
+            }
+        });
+
+        document.getElementById('mode').addEventListener('change', (e) => {
+            currentMode = e.target.value;
+            selectNextWord();
+        });
+
+        // 显示答案按钮事件
+        const showAnswerBtn = document.getElementById('showAnswerBtn');
+        const answerDisplay = document.getElementById('answerDisplay');
+
+        showAnswerBtn.addEventListener('mousedown', () => {
+            if (wordsData.length > 0) {
+                answerDisplay.style.display = 'block';
+            }
+        });
+
+        showAnswerBtn.addEventListener('mouseup', () => {
+            answerDisplay.style.display = 'none';
+        });
+
+        // 防止鼠标移开按钮时答案仍然显示
+        showAnswerBtn.addEventListener('mouseleave', () => {
+            answerDisplay.style.display = 'none';
+        });
+    </script>
+</body>
+</html>

@@ -325,8 +325,10 @@ a:hover {
     padding: 5px 20px;
     border: 2px solid white;
     border-radius: 50px;
-    font-size: 16px;
+    font-size: 14px;
     transition: all 0.2s ease-in-out;
+    display: block; /* 使按钮成为块级元素 */
+    margin: 0 auto; /* 水平居中 */
 }
 
 

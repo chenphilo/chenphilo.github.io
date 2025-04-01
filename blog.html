@@ -17,7 +17,17 @@
       <!-- 引入jQuery库 -->
       <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
       <!-- 引入Showdown.js库 -->
-      <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
+      <script>
+         window.MathJax = {
+             tex: {
+                 inlineMath: [['$', '$']],        // 明确指定 $...$ 为行内公式
+                 displayMath: [['$$', '$$']],     // 明确指定 $$...$$ 为块级公式
+                 processEscapes: true             // 允许转义字符
+             }
+         };
+      </script>
+      <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
       <!-- 引入主要的JavaScript文件 -->
       <script src="js/blog.js"></script>
    </body>

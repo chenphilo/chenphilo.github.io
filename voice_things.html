@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Grid with Audio and Beats</title>
+    <style>
+        /* 全局样式 */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        /* 新增的固定背景样式 */
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('media/Solvay_conference_1927_dark.jpg');
+            background-size: cover; /* 充满屏幕 */
+            background-attachment: fixed; /* 背景固定，不随滚动移动 */
+            z-index: -100; /* 确保在最底层 */
+            margin: 0;
+            display: flex;
+        }
+        /* 画布背景样式 */
+        #canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* 居中对齐 */
+            width: 15%; /* 调整宽度，例如80%，不铺满全屏 */
+            height: 30%; /* 调整高度，例如80%，不铺满全屏 */
+            z-index: 1; /* 在背景之上，网格之下 */
+        }
+
+        /* 网格容器样式 */
+        #grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            z-index: 2;
+        }
+
+        /* 单个方块样式 */
+        .block {
+            background-color: white;
+            opacity: 0.1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            transition: opacity 0.5s ease;
+            user-select: none;
+            font-size: 18px;
+        }
+        /* 文字 */
+        #textOverlay {
+            position: fixed;
+            top: 20%; /* 中偏上位置 */
+            left: 50%;
+            transform: translateX(-50%); /* 水平居中 */
+            color: white;
+            text-align: center;
+            z-index: 10; /* 确保在最前方 */
+            opacity: 0; /* 初始透明度为0 */
+            transition: opacity 0.5s ease, transform 0.5s ease; /* 过渡动画 */
+            pointer-events: none; /* 防止文字挡住交互 */
+            text-shadow: 4px 4px 4px rgba(0, 0, 0, 0.8); /* 文字阴影提升可读性 */
+        }
+
+        /* 文字出现时的动画状态 */
+        #textOverlay.active {
+            opacity: 1; /* 完全显示 */
+            transform: translateX(-50%) translateY(-10px); /* 轻微上移 */
+        }
+        /* 手机端布局 - 屏幕宽度小于768px时应用 */
+        @media screen and (max-width: 768px) {
+        #grid {
+            grid-template-columns: repeat(3, 1fr); /* 横3列 */
+            grid-template-rows: repeat(8, 1fr); /* 竖8行 */
+        }
+        #canvas {
+            width: 80%; /* 手机端增加画布宽度 */
+            height: 40%; /* 手机端增加画布高度 */
+        }
+
+        #textOverlay {
+            top: 10%; /* 手机端调整文字位置 */
+            font-size: 14px; /* 减小字体大小以适应小屏幕 */
+        }
+        }
+    </style>
+</head>
+<body>
+        <div class="background"></div>
+        <!-- 背景画布 -->
+        <canvas id="canvas"></canvas>
+        <!-- 网格容器 -->
+        <div id="grid"></div>
+        <!-- 文字显示容器 -->
+        <div id="textOverlay"></div>
+    
+    <script>
+        function loadScript(src) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true; // 异步加载
+            document.body.appendChild(script);
+        }
+
+        // 检查屏幕宽度并加载对应脚本
+        function loadResponsiveScript() {
+            if (window.matchMedia("(max-width: 768px)").matches) {
+                // 手机端（屏幕宽度小于768px）
+                loadScript('js/voice_things_mobile.js');
+            } else {
+                // 桌面端
+                loadScript('js/voice_things_pc.js');
+            }
+        }
+
+        // 初始加载
+        loadResponsiveScript();
+
+        // 监听窗口大小变化
+        window.addEventListener('resize', loadResponsiveScript);
+    </script>
+</body>
+</html>
