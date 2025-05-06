@@ -1,0 +1,17 @@
+prospest, 前景,0,0
+estimate, 推定,0,0
+elicited, 引き出す,0,0
+Arbitrage, 価格差で利益を得る取引,0,0
+explicitly,明示的に,0,0
+implicitly, 黙示的に,0,0
+exhaustive, 徹底的な,0,0
+mutually, 互いに,0,0
+exclusive, 排他的,0,0
+partition, 区画,0,0
+asset, 資源,0,0
+preceding, 先立つ,0,0
+impoverishing, 貧しくする,0,0
+preclude, 不可能にする,0,0
+difference, 差分(微分),0,0
+calculus, 微分積分,0,0
+integration, 積分,0,0

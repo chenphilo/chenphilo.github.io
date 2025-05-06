@@ -13,12 +13,46 @@
             align-items: center;
             font-family: 'Noto Sans JP', sans-serif;
         }
-        .container {
-            text-align: center;
+        .main-container {
+            display: flex;
+            width: 100%;
             height: 100vh;
+        }
+        .container {
+            flex: 3;
+        }
+        .wrong-container {
+            flex: 1;
+            height: 100%;
+            padding: 20px;
+            color: white;
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
+            align-items: center;
+            background-color: #222;
+        }
+        .wrong-list {
+            width: 100%;
+            max-height: 80%;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .wrong-item {
+            font-size: 18px;
+            margin: 10px 0;
+            text-align: left;
+        }
+        .clear-wrong-btn {
+            padding: 10px 20px;
+            background-color: #444;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .clear-wrong-btn:active {
+            background-color: #555;
         }
         .header {
             padding: 20px;
@@ -93,24 +127,30 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <select id="mode">
-                <option value="random">ランダム</option>
-                <option value="error">バツ率順</option>
-            </select>
-            <select id="fileSelector">
-                <option value="">選んで</option>
-                <!-- 文件选项将动态添加 -->
-            </select>
+    <div class="main-container">
+        <div class="container">
+            <div class="header">
+                <select id="mode">
+                    <option value="random">ランダム</option>
+                    <option value="error">バツ率順</option>
+                </select>
+                <select id="fileSelector">
+                    <option value="">選んで</option>
+                    <!-- 文件选项将动态添加 -->
+                </select>
+            </div>
+            <div class="top-half">
+                <div class="word" id="wordDisplay">↑選んで</div>
+                <div class="answer" id="answerDisplay"></div>
+            </div>
+            <div class="bottom-half">
+                <input type="text" class="input-box" id="inputBox" disabled>
+                <button class="show-answer-btn" id="showAnswerBtn">答えを見る</button>
+            </div>
         </div>
-        <div class="top-half">
-            <div class="word" id="wordDisplay">↑選んで</div>
-            <div class="answer" id="answerDisplay"></div>
-        </div>
-        <div class="bottom-half">
-            <input type="text" class="input-box" id="inputBox" disabled>
-            <button class="show-answer-btn" id="showAnswerBtn">答えを見る</button>
+        <div class="wrong-container">
+            <div class="wrong-list" id="wrongList"></div>
+            <button class="clear-wrong-btn" id="clearWrongBtn">リストをクリア</button>
         </div>
     </div>
 
@@ -118,6 +158,8 @@
         let wordsData = [];
         let currentIndex = 0;
         let currentMode = 'random';
+        let visited = []; // Tracks visited words in the current cycle
+        let wrongAnswers = [];
 
         // 加载文件列表
         const fileSelector = document.getElementById('fileSelector');
@@ -157,17 +199,21 @@
                 })
                 .then(content => {
                     wordsData = content.split('\n')
-                        .filter(line => line.trim()) // 过滤空行
+                        .filter(line => line.trim())
                         .map(line => {
                             const [riddle, answer, correct, total] = line.split(',')
-                                .map(part => part.replace(/\s/g, '')); // 移除每部分的空格
+                                .map(part => part.replace(/\s/g, ''));
+                            // Check if this riddle exists in wrongAnswers
+                            const existingWrong = wrongAnswers.find(item => item.riddle === riddle);
                             return { 
                                 riddle, 
                                 answer, 
                                 correct: parseInt(correct) || 0, 
-                                total: parseInt(total) || 0 
+                                total: parseInt(total) || 0,
+                                consecutiveWrong: existingWrong ? existingWrong.consecutiveWrong : 0 // Preserve count
                             };
                         });
+                    visited = []; // Reset visited for new dataset
                     document.getElementById('inputBox').disabled = false;
                     selectNextWord();
                 })
@@ -187,24 +233,58 @@
 
         function selectNextWord() {
             if (wordsData.length === 0) return;
+
             if (currentMode === 'random') {
                 currentIndex = Math.floor(Math.random() * wordsData.length);
+                visited = []; // Reset visited in random mode
             } else {
-                // 按错误率排序
-                wordsData.sort((a, b) => {
-                    const rateA = a.total === 0 ? 0 : (a.total - a.correct) / a.total;
-                    const rateB = b.total === 0 ? 0 : (b.total - b.correct) / b.total;
-                    return rateB - rateA;
+                // If all words have been visited, reset the visited array
+                if (visited.length >= wordsData.length) {
+                    visited = [];
+                }
+
+                // Create a sorted copy of wordsData with error rates
+                const sortedWords = wordsData.map((word, index) => ({
+                    word,
+                    index,
+                    rate: word.total === 0 ? 0 : (word.total - word.correct) / word.total
+                })).sort((a, b) => {
+                    if (a.rate === b.rate) {
+                        return Math.random() - 0.5; // Randomize order for equal rates
+                    }
+                    return b.rate - a.rate; // Sort by error rate descending
                 });
-                currentIndex = 0;
+
+                // Find the next unvisited word
+                for (let i = 0; i < sortedWords.length; i++) {
+                    const wordIndex = sortedWords[i].index;
+                    if (!visited.includes(wordIndex)) {
+                        currentIndex = wordIndex;
+                        visited.push(wordIndex);
+                        break;
+                    }
+                }
             }
             loadWord();
         }
 
+        function updateWrongList() {
+            const wrongList = document.getElementById('wrongList');
+            wrongList.innerHTML = '';
+            wrongAnswers.sort((a, b) => b.consecutiveWrong - a.consecutiveWrong); // Sort by consecutiveWrong descending
+            wrongAnswers.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'wrong-item';
+                div.textContent = `${item.riddle},${item.consecutiveWrong}`;
+                wrongList.appendChild(div);
+            });
+        }
+
         document.getElementById('inputBox').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                const input = e.target.value.replace(/\s/g, ''); // 移除所有空格
-                const correctAnswer = wordsData[currentIndex].answer.replace(/\s/g, ''); // 移除正确答案中的所有空格
+                const input = e.target.value.replace(/\s/g, '');
+                if (input === '') return; // Ignore empty input
+                const correctAnswer = wordsData[currentIndex].answer.replace(/\s/g, '');
                 wordsData[currentIndex].total++;
 
                 if (input === correctAnswer) {
@@ -212,6 +292,18 @@
                     new Audio('media/correct.wav').play();
                     selectNextWord();
                 } else {
+                    wordsData[currentIndex].consecutiveWrong++;
+                    const riddle = wordsData[currentIndex].riddle;
+                    const existing = wrongAnswers.find(item => item.riddle === riddle);
+                    if (existing) {
+                        existing.consecutiveWrong = wordsData[currentIndex].consecutiveWrong;
+                    } else {
+                        wrongAnswers.push({
+                            riddle,
+                            consecutiveWrong: wordsData[currentIndex].consecutiveWrong
+                        });
+                    }
+                    updateWrongList();
                     const inputBox = document.getElementById('inputBox');
                     inputBox.value = '';
                     inputBox.classList.add('shake');
@@ -222,8 +314,15 @@
             }
         });
 
+        document.getElementById('clearWrongBtn').addEventListener('click', () => {
+            wordsData.forEach(word => word.consecutiveWrong = 0); // Reset all consecutive wrong counts
+            wrongAnswers = []; // Clear wrong answers list
+            updateWrongList(); // Update display
+        });
+
         document.getElementById('mode').addEventListener('change', (e) => {
             currentMode = e.target.value;
+            visited = []; // Reset visited for new mode
             selectNextWord();
         });
 
