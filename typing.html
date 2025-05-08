@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <title>日语单词测试</title>
@@ -13,14 +14,17 @@
             align-items: center;
             font-family: 'Noto Sans JP', sans-serif;
         }
+
         .main-container {
             display: flex;
             width: 100%;
             height: 100vh;
         }
+
         .container {
             flex: 3;
         }
+
         .wrong-container {
             flex: 1;
             height: 100%;
@@ -32,17 +36,20 @@
             align-items: center;
             background-color: #222;
         }
+
         .wrong-list {
             width: 100%;
             max-height: 80%;
             overflow-y: auto;
             margin-bottom: 20px;
         }
+
         .wrong-item {
             font-size: 18px;
             margin: 10px 0;
             text-align: left;
         }
+
         .clear-wrong-btn {
             padding: 10px 20px;
             background-color: #444;
@@ -51,15 +58,18 @@
             cursor: pointer;
             font-size: 16px;
         }
+
         .clear-wrong-btn:active {
             background-color: #555;
         }
+
         .header {
             padding: 20px;
             display: flex;
             justify-content: center;
             gap: 20px;
         }
+
         .top-half {
             height: 50%;
             display: flex;
@@ -67,6 +77,7 @@
             justify-content: center;
             align-items: center;
         }
+
         .bottom-half {
             height: 40%;
             display: flex;
@@ -74,17 +85,20 @@
             justify-content: flex-start;
             align-items: center;
         }
+
         .word {
             color: white;
             font-size: 48px;
             margin-bottom: 20px;
         }
+
         .answer {
             color: #ccc;
             font-size: 24px;
             margin-top: 20px;
             display: none;
         }
+
         .input-box {
             width: 200px;
             height: 40px;
@@ -96,22 +110,40 @@
             outline: none;
             margin-top: 20px;
         }
+
         .shake {
             animation: shake 0.5s;
         }
+
         @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            50% { transform: translateX(10px); }
-            75% { transform: translateX(-10px); }
-            100% { transform: translateX(0); }
+            0% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-10px);
+            }
+
+            50% {
+                transform: translateX(10px);
+            }
+
+            75% {
+                transform: translateX(-10px);
+            }
+
+            100% {
+                transform: translateX(0);
+            }
         }
+
         select {
             background-color: #333;
             color: white;
             padding: 5px;
             border: none;
         }
+
         .show-answer-btn {
             margin-top: 20px;
             padding: 10px 20px;
@@ -121,11 +153,13 @@
             cursor: pointer;
             font-size: 16px;
         }
+
         .show-answer-btn:active {
             background-color: #555;
         }
     </style>
 </head>
+
 <body>
     <div class="main-container">
         <div class="container">
@@ -153,19 +187,22 @@
             <button class="clear-wrong-btn" id="clearWrongBtn">リストをクリア</button>
         </div>
     </div>
-
     <script>
-        let wordsData = [];
+        let wordsData = []; // 存储词汇数据及本次测试的统计（正确、总次、当前连续错误）
         let currentIndex = 0;
         let currentMode = 'random';
-        let visited = []; // Tracks visited words in the current cycle
-        let wrongAnswers = [];
+        // 存储当前模式下已访问过的词汇的原始索引，用于确保循环遍历
+        let visited = [];
+        // 独立存储答错的词汇信息，用于侧边栏显示，除非手动清除，否则保留
+        let wrongAnswers = []; // 结构: [{ riddle: string, totalWrongCount: number, lastConsecutiveWrong: number }]
+
 
         // 加载文件列表
         const fileSelector = document.getElementById('fileSelector');
+        // 注意：fetch('data/typing/filelist.txt') 假设 filelist.txt 文件位于 data/typing 目录下
         fetch('data/typing/filelist.txt')
             .then(response => {
-                if (!response.ok) throw new Error('FAIL LOADING');
+                if (!response.ok) throw new Error('文件列表加载失败');
                 return response.text();
             })
             .then(content => {
@@ -178,8 +215,8 @@
                 });
             })
             .catch(error => {
-                console.error('FAIL LOADING:', error);
-                fileSelector.innerHTML = '<option value="">FAIL LOADING</option>';
+                console.error('加载文件列表失败:', error);
+                fileSelector.innerHTML = '<option value="">加载失败</option>';
             });
 
         // 文件选择事件
@@ -194,148 +231,232 @@
         function loadFile(filename) {
             fetch(`data/typing/${filename}`)
                 .then(response => {
-                    if (!response.ok) throw new Error('FAIL LOADING');
+                    if (!response.ok) throw new Error('词汇文件加载失败');
                     return response.text();
                 })
                 .then(content => {
                     wordsData = content.split('\n')
                         .filter(line => line.trim())
                         .map(line => {
+                            // 解析文件中的 riddle, answer, correct, total
                             const [riddle, answer, correct, total] = line.split(',')
-                                .map(part => part.replace(/\s/g, ''));
-                            // Check if this riddle exists in wrongAnswers
-                            const existingWrong = wrongAnswers.find(item => item.riddle === riddle);
-                            return { 
-                                riddle, 
-                                answer, 
-                                correct: parseInt(correct) || 0, 
+                                .map(part => part ? part.trim() : ''); // 移除首尾空白，处理空字段
+                            return {
+                                riddle,
+                                answer,
+                                correct: parseInt(correct) || 0,
                                 total: parseInt(total) || 0,
-                                consecutiveWrong: existingWrong ? existingWrong.consecutiveWrong : 0 // Preserve count
+                                // 初始化当前连续答错次数为 0
+                                consecutiveWrong: 0
                             };
                         });
-                    visited = []; // Reset visited for new dataset
+
+                    visited = []; // 加载新文件时重置已访问列表
+                    // wrongAnswers 列表不受文件加载影响，除非手动清除
                     document.getElementById('inputBox').disabled = false;
+                    // 第一次加载后，根据当前模式选择第一个词
                     selectNextWord();
                 })
                 .catch(error => {
-                    console.error('FAIL LOADING:', error);
-                    document.getElementById('wordDisplay').textContent = 'FAIL LOADING';
+                    console.error('加载词汇文件失败:', error);
+                    document.getElementById('wordDisplay').textContent = '加载失败';
                     document.getElementById('inputBox').disabled = true;
                 });
         }
 
+        // 显示当前词汇信息
         function loadWord() {
+            if (wordsData.length === 0 || currentIndex < 0 || currentIndex >= wordsData.length) {
+                document.getElementById('wordDisplay').textContent = '词汇加载中或为空';
+                document.getElementById('answerDisplay').textContent = '';
+                document.getElementById('inputBox').value = '';
+                document.getElementById('inputBox').disabled = true;
+                return;
+            }
             document.getElementById('wordDisplay').textContent = wordsData[currentIndex].riddle;
             document.getElementById('inputBox').value = '';
             document.getElementById('answerDisplay').textContent = wordsData[currentIndex].answer;
             document.getElementById('answerDisplay').style.display = 'none'; // 确保答案默认隐藏
+            document.getElementById('inputBox').disabled = false; // 确保输入框可用
+            document.getElementById('inputBox').focus(); // 输入框获取焦点
         }
 
+        // 选择下一个词汇
         function selectNextWord() {
-            if (wordsData.length === 0) return;
+            if (wordsData.length === 0) {
+                loadWord(); // 显示加载失败或为空的状态
+                return;
+            }
 
             if (currentMode === 'random') {
-                currentIndex = Math.floor(Math.random() * wordsData.length);
-                visited = []; // Reset visited in random mode
-            } else {
-                // If all words have been visited, reset the visited array
+                // 如果所有词都已访问，重置已访问列表，开始新一轮循环
                 if (visited.length >= wordsData.length) {
                     visited = [];
+                    console.log("随机模式：所有词汇已访问，重置循环。");
                 }
 
-                // Create a sorted copy of wordsData with error rates
+                let randomIndex;
+                // 循环查找一个尚未访问过的随机索引
+                do {
+                    randomIndex = Math.floor(Math.random() * wordsData.length);
+                } while (visited.includes(randomIndex));
+
+                currentIndex = randomIndex;
+                visited.push(currentIndex); // 将当前索引标记为已访问
+
+            } else { // 'error' mode
+                // 如果所有词都已访问，重置已访问列表，开始新一轮循环
+                if (visited.length >= wordsData.length) {
+                    visited = [];
+                    console.log("错误率模式：所有词汇已访问，重置循环。");
+                }
+
+                // 计算每个词汇的错误率，并保留原始索引
                 const sortedWords = wordsData.map((word, index) => ({
                     word,
-                    index,
+                    originalIndex: index, // 保留原始索引
+                    // 计算错误率 (总次数 - 正确次数) / 总次数
                     rate: word.total === 0 ? 0 : (word.total - word.correct) / word.total
                 })).sort((a, b) => {
-                    if (a.rate === b.rate) {
-                        return Math.random() - 0.5; // Randomize order for equal rates
+                    // 按错误率降序排序
+                    if (b.rate !== a.rate) {
+                        return b.rate - a.rate;
+                    } else {
+                        // 错误率相同时，按原始索引升序排序（数据文本顺序）
+                        return a.originalIndex - b.originalIndex;
                     }
-                    return b.rate - a.rate; // Sort by error rate descending
                 });
 
-                // Find the next unvisited word
+                let nextIndex = -1;
+                // 遍历排序后的列表，找到第一个尚未访问过的词汇的原始索引
                 for (let i = 0; i < sortedWords.length; i++) {
-                    const wordIndex = sortedWords[i].index;
-                    if (!visited.includes(wordIndex)) {
-                        currentIndex = wordIndex;
-                        visited.push(wordIndex);
+                    const originalIndex = sortedWords[i].originalIndex;
+                    if (!visited.includes(originalIndex)) {
+                        nextIndex = originalIndex;
+                        visited.push(nextIndex); // 将原始索引标记为已访问
                         break;
                     }
                 }
+                currentIndex = nextIndex; // 更新当前索引
             }
-            loadWord();
+            loadWord(); // 加载并显示选中的词汇
         }
 
+        // 更新错误列表显示
         function updateWrongList() {
             const wrongList = document.getElementById('wrongList');
             wrongList.innerHTML = '';
-            wrongAnswers.sort((a, b) => b.consecutiveWrong - a.consecutiveWrong); // Sort by consecutiveWrong descending
+            // 根据记录的最后一次连续答错次数降序排序错误列表（或可以改为按 totalWrongCount 排序）
+            wrongAnswers.sort((a, b) => b.lastConsecutiveWrong - a.lastConsecutiveWrong); // 按最后一次连续答错次数排序
+            // 如果想按总错误次数排序，可以使用: wrongAnswers.sort((a, b) => b.totalWrongCount - a.totalWrongCount);
+
             wrongAnswers.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'wrong-item';
-                div.textContent = `${item.riddle},${item.consecutiveWrong}`;
+                // 显示词汇，总错误次数，和最后一次的连续答错次数快照
+                div.textContent = `${item.riddle} (错: ${item.totalWrongCount}, 连错: ${item.lastConsecutiveWrong})`;
                 wrongList.appendChild(div);
             });
         }
 
+        // 输入框按键事件
         document.getElementById('inputBox').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                const input = e.target.value.replace(/\s/g, '');
-                if (input === '') return; // Ignore empty input
-                const correctAnswer = wordsData[currentIndex].answer.replace(/\s/g, '');
+                // 防止在输入框不可用时触发
+                if (e.target.disabled) return;
+
+                // 获取输入值，移除空白并转小写，以便进行不区分大小写的比较
+                const input = e.target.value.replace(/\s/g, '').toLowerCase();
+                // 忽略空输入
+                if (input === '') return;
+
+                // 获取正确答案并移除空白，转小写
+                const correctAnswer = wordsData[currentIndex].answer.replace(/\s/g, '').toLowerCase();
+
+                // 总尝试次数增加
                 wordsData[currentIndex].total++;
 
                 if (input === correctAnswer) {
+                    // 回答正确
                     wordsData[currentIndex].correct++;
-                    new Audio('media/correct.wav').play();
-                    selectNextWord();
+                    // **重要：答对时，当前词汇的连续答错次数重置**
+                    wordsData[currentIndex].consecutiveWrong = 0;
+
+                    // **重要：答对时，不从 wrongAnswers 列表中移除词汇！**
+                    // updateWrongList(); // 答对时不更新侧边栏显示，因为没有词汇变化
+
+                    new Audio('media/correct.wav').play(); // 播放正确音效
+                    selectNextWord(); // 选择下一个词汇
+
                 } else {
+                    // 回答错误
+                    // 当前词汇的连续答错次数增加
                     wordsData[currentIndex].consecutiveWrong++;
+
                     const riddle = wordsData[currentIndex].riddle;
-                    const existing = wrongAnswers.find(item => item.riddle === riddle);
-                    if (existing) {
-                        existing.consecutiveWrong = wordsData[currentIndex].consecutiveWrong;
+                    // 在 wrongAnswers 列表中查找
+                    const existingWrongItem = wrongAnswers.find(item => item.riddle === riddle);
+
+                    if (existingWrongItem) {
+                        // 如果已在错误列表中，更新其统计信息
+                        existingWrongItem.totalWrongCount++;
+                        existingWrongItem.lastConsecutiveWrong = wordsData[currentIndex].consecutiveWrong; // 记录本次连续答错次数快照
                     } else {
+                        // 如果不在错误列表中，添加新条目
                         wrongAnswers.push({
                             riddle,
-                            consecutiveWrong: wordsData[currentIndex].consecutiveWrong
+                            totalWrongCount: 1, // 第一次答错，总错误次数为 1
+                            lastConsecutiveWrong: wordsData[currentIndex].consecutiveWrong // 记录本次连续答错次数快照 (此时应为 1)
                         });
                     }
-                    updateWrongList();
+                    updateWrongList(); // 更新错误列表显示
+
                     const inputBox = document.getElementById('inputBox');
-                    inputBox.value = '';
-                    inputBox.classList.add('shake');
-                    new Audio('media/wrong.wav').play();
+                    inputBox.value = ''; // 清空输入框
+                    inputBox.classList.add('shake'); // 添加抖动效果
+                    new Audio('media/wrong.wav').play(); // 播放错误音效
+
+                    // 移除抖动效果
                     setTimeout(() => inputBox.classList.remove('shake'), 500);
+
+                    // 错误时停留在当前词汇，等待再次输入或查看答案
                 }
-                console.log('更新后的数据:', wordsData);
+                console.log('更新后的 wordsData:', wordsData[currentIndex]);
+                console.log('当前 wrongAnswers:', wrongAnswers);
             }
         });
 
+        // 清空错误列表按钮事件
         document.getElementById('clearWrongBtn').addEventListener('click', () => {
-            wordsData.forEach(word => word.consecutiveWrong = 0); // Reset all consecutive wrong counts
-            wrongAnswers = []; // Clear wrong answers list
-            updateWrongList(); // Update display
+            // **重要：只清空 wrongAnswers 列表**
+            wrongAnswers = [];
+            // 同时重置 wordsData 中所有词汇的当前连续答错次数
+            wordsData.forEach(word => word.consecutiveWrong = 0);
+
+            // 更新显示
+            updateWrongList();
+            console.log("错误列表已清除，wordsData 中连续答错次数已重置。");
         });
 
+        // 模式选择事件
         document.getElementById('mode').addEventListener('change', (e) => {
             currentMode = e.target.value;
-            visited = []; // Reset visited for new mode
-            selectNextWord();
+            visited = []; // 切换模式时重置已访问列表
+            selectNextWord(); // 根据新模式选择下一个词汇
         });
 
         // 显示答案按钮事件
         const showAnswerBtn = document.getElementById('showAnswerBtn');
         const answerDisplay = document.getElementById('answerDisplay');
 
+        // 按下按钮时显示答案
         showAnswerBtn.addEventListener('mousedown', () => {
-            if (wordsData.length > 0) {
+            if (wordsData.length > 0 && currentIndex >= 0 && currentIndex < wordsData.length) {
                 answerDisplay.style.display = 'block';
             }
         });
 
+        // 松开按钮时隐藏答案
         showAnswerBtn.addEventListener('mouseup', () => {
             answerDisplay.style.display = 'none';
         });
@@ -344,6 +465,13 @@
         showAnswerBtn.addEventListener('mouseleave', () => {
             answerDisplay.style.display = 'none';
         });
+
+        // 初始化加载文件列表（页面加载完成后执行）
+        // 你的代码里已经有了，请确保这些初始化代码在整个脚本的适当位置，通常在最后
+        // fetch('data/typing/filelist.txt')...
+        // fileSelector.addEventListener('change',...
+
     </script>
 </body>
+
 </html>
