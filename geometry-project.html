@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>交互式几何结构可视化</title>
+    <title>交互式几何变换可视化 (全3D版)</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -28,19 +28,10 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
-        .info-container h1 {
-            margin-top: 0;
-            font-size: 2em;
-            color: #1a1a1a;
-        }
-        .info-container p {
-            line-height: 1.6;
-            font-size: 1.1em;
-        }
-        .controls {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+        .info-container h1 { margin-top: 0; font-size: 2em; color: #1a1a1a; }
+        .info-container div { line-height: 1.6; font-size: 1.1em; }
+        .info-container ul { padding-left: 25px; }
+        .controls { text-align: center; margin-bottom: 20px; }
         .controls button {
             background-color: #007bff;
             color: white;
@@ -52,60 +43,66 @@
             font-size: 1em;
             transition: background-color 0.3s;
         }
-        .controls button:hover {
-            background-color: #0056b3;
-        }
-        .controls button.active {
-            background-color: #004085;
-            font-weight: bold;
-        }
+        .controls button:hover { background-color: #0056b3; }
+        .controls button.active { background-color: #004085; font-weight: bold; }
         #visualization-container {
             width: 100%;
-            height: 500px; /* 定义一个固定高度 */
+            height: 500px;
             background-color: #000;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             position: relative;
             overflow: hidden;
+            cursor: default;
         }
-        /* 加载指示器 */
-        #loader {
+        .lil-gui {
             position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 1.2em;
+            top: 10px;
+            right: 10px;
+            z-index: 100;
         }
     </style>
+    <script>
+        MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']]
+          },
+          svg: {
+            fontCache: 'global'
+          }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+    </script>
 </head>
 <body>
 
     <div class="main-container">
         <div class="info-container">
-            <h1 id="structure-title">交互式几何结构</h1>
-            <p id="structure-description">
-                欢迎来到交互式几何学习工具。空间并不仅仅是我们所见的虚空，它可以通过添加不同的数学“结构”来获得丰富的特性。请点击下方按钮，探索从“柔软”的拓扑空间到“刚性”的度量空间的不同几何世界。
-            </p>
+            <h1 id="structure-title">几何变换</h1>
+            <div id="structure-description">
+                <p>欢迎来到几何变换可视化工具。一种几何学可以被其“结构”所定义，也可以被所有“保持该结构不变的变换”所构成的群来定义（克莱因，爱尔兰根纲领）。这个工具将帮助您直观地感受这些变换。</p>
+            </div>
         </div>
 
         <div class="controls">
-            <button id="btn-topology" class="control-btn">拓扑结构</button>
-            <button id="btn-affine" class="control-btn">仿射结构</button>
-            <button id="btn-differentiable" class="control-btn">可微分结构</button>
-            <button id="btn-metric" class="control-btn">度量结构</button>
+            <button id="btn-homeomorphism" class="control-btn">同胚变换</button>
+            <button id="btn-diffeomorphism" class="control-btn">微分同胚变换</button>
+            <button id="btn-affine" class="control-btn">仿射变换</button>
+            <button id="btn-isometry" class="control-btn">等距变换</button>
         </div>
 
-        <div id="visualization-container">
-            <div id="loader">加载中...</div>
-        </div>
+        <div id="visualization-container"></div>
     </div>
 
     <script type="importmap">
         {
             "imports": {
                 "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.165.0/examples/jsm/"
+                "three/addons/": "https://unpkg.com/three@0.165.0/examples/jsm/",
+                "lil-gui": "https://unpkg.com/lil-gui@0.19.1/dist/lil-gui.esm.js"
             }
         }
     </script>
@@ -113,227 +110,307 @@
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import GUI from 'lil-gui';
 
-        // ---- 全局变量 ----
-        let scene, camera, renderer, controls;
-        let currentObject = null; // 当前场景中的主要对象
+        let scene, camera, renderer, controls, gui;
+        let currentObject = null;
         const visContainer = document.getElementById('visualization-container');
-        const loader = document.getElementById('loader');
 
-        // ---- 文本内容 ----
         const descriptions = {
-            'topology': {
-                title: '拓扑结构 (Topology)',
-                text: '拓扑只关心物体的连通性和洞的数量，而不在乎形状和大小。一个甜甜圈可以被平滑地捏成一个咖啡杯，因为它们都有一个洞。这个环面正在随机变形，但它始终是一个环面。'
+            'homeomorphism': {
+                title: '同胚变换 (Topological)',
+                text: `
+                    <strong>核心定义:</strong> 一个连续且可逆的“橡皮泥”式变形，其逆变换也必须是连续的。这是最基础的几何变换。
+                    <br><br>
+                    <strong>保持不变 (Invariants):</strong>
+                    <ul>
+                        <li><b>拓扑性质</b>: 连通性、物体的“洞”的数量（如贝蒂数）、紧致性等。</li>
+                        <li><b>邻近关系</b>: 点与点之间的“远近亲疏”关系被保持，但不是一个可测量的距离。</li>
+                    </ul>
+                    <strong>允许改变 (Variants):</strong>
+                    <ul>
+                        <li><b>所有度量属性</b>: 长度、角度、面积、体积都可以任意改变。</li>
+                        <li><b>所有仿射属性</b>: 直线可以被弯曲，平行线可以不再平行。</li>
+                        <li><b>所有光滑属性</b>: 光滑的曲面可以被变成带有“尖角”的形状。</li>
+                    </ul>
+                    <strong>定义的层级:</strong>
+                    同胚变换是在一个拓扑空间 (Topological Space) 上定义的。在一个更基础的、纯粹的集合中，点与点之间没有任何关联，连“连续”的概念都无法定义，因此也就无法讨论同胚变换。
+                `
+            },
+            'diffeomorphism': {
+                title: '微分同胚变换 (Differentiable)',
+                text: `
+                    <strong>核心定义:</strong> 一个光滑且可逆的变形，其逆变换也必须是光滑的。它不允许产生尖点或折痕。
+                    <br><br>
+                    <strong>保持不变 (Invariants):</strong>
+                    <ul>
+                        <li><b>所有拓扑性质</b> (因为它首先是一个同胚变换)。</li>
+                        <li><b>可微分结构</b>: 空间的“光滑性”被保持。一个光滑的物体变换后依然是光滑的。</li>
+                    </ul>
+                    <strong>允许改变 (Variants):</strong>
+                    <ul>
+                        <li><b>所有度量属性</b>: 长度、角度、面积、体积。</li>
+                        <li><b>所有仿射属性</b>: 直线可以被平滑地弯曲，平行关系可以被破坏。</li>
+                    </ul>
+                    <strong>定义的层级:</strong>
+                    微分同胚变换是在一个 可微分流形 (Differentiable Manifold) 上定义的。在一个仅有拓扑结构的普通拓扑空间中，我们无法定义这个变换，因为空间本身可能不是“光滑”的，我们无从判断一个变换是否保持了光滑性。
+                `
             },
             'affine': {
-                title: '仿射结构 (Affine)',
-                text: '仿射结构引入了“直线”和“平行”的概念。你可以看到，即使整个空间被剪切变换（一种仿射变换），网格线依然是直的，并且相互平行的线族依然保持平行。'
+                title: '仿射变换 (Affine)',
+                text: `
+                    <strong>核心定义:</strong> 保持“直线”与“平行”关系的变换。
+                    <br><br>
+                    <strong>保持不变 (Invariants):</strong>
+                    <ul>
+                        <li><b>所有拓扑性质</b>。</li>
+                        <li><b>共线性</b>: 在一条直线上的点，变换后依然在一条直线上。</li>
+                        <li><b>平行性</b>: 相互平行的直线，变换后依然相互平行。</li>
+                        <li><b>共线向量的长度比</b>: 一个点如果是某线段的中点，变换后它依然是新线段的中点。</li>
+                    </ul>
+                    <strong>允许改变 (Variants):</strong>
+                    <ul>
+                        <li><b>长度和距离</b> (除非变换恰好也是等距变换)。</li>
+                        <li><b>角度</b> (除非变换恰好也是相似变换)。</li>
+                        <li><b>面积和体积</b> (它们会被缩放一个固定的倍数)。</li>
+                    </ul>
+                    <strong>定义的层级:</strong>
+                    仿射变换是在一个 仿射空间 (Affine Space) 中定义的。在一个仅有拓扑结构或可微分结构的空间里，我们无法谈论一个变换是否是“仿射”的，因为该空间中根本没有全局的“直线”或“平行”概念可供保持。只有引入了仿射结构，“是否保持共线性”才成为一个有意义的问题。
+                `
             },
-            'differentiable': {
-                title: '可微分结构 (Differentiable)',
-                text: '可微分结构让空间变得“光滑”，允许我们进行微积分。在这个光滑的曲面上，每一点都可以找到一个局部近似的平面，即“切平面”。目前功能简化，展示一个光滑流形。'
-            },
-            'metric': {
-                title: '度量结构 (Metric)',
-                text: '度量结构最终定义了“距离”和“角度”。在球面上，两点间的最短路径（测地线）是一段大圆弧，而不是直线。这个红色的线展示了球面上的一条测地线。'
+            'isometry': {
+                title: '等距变换 (Metric)',
+                text: `
+                    <strong>核心定义:</strong> 保持任意两点间“距离”不变的变换，即刚体运动。
+                    <br><br>
+                    <strong>保持不变 (Invariants):</strong>
+                    <ul>
+                        <li><b>所有度量属性</b>: 长度、角度、面积、体积。</li>
+                        <li>因此，它也同时保持了所有仿射、微分和拓扑性质s。这是最严格的变换。</li>
+                    </ul>
+                    <strong>允许改变 (Variants):</strong>
+                    <ul>
+                        <li>物体在空间中的<b>位置</b>和<b>朝向</b>。</li>
+                    </ul>
+                    <strong>定义的层级:</strong>
+                    等距变换是在一个 度量空间 (Metric Space) （例如欧氏空间或黎曼流形）中定义的。在一个仅有仿射结构但没有度量（即没有定义“距离”和“角度”）的空间里，我们无法提出“一个变换是否保持距离”这个问题。因此，在仿射空间中，我们无法将一个普通的仿射变换（如缩放）和一个等距变换区分开来。
+                `
             }
         };
 
-        // ---- 初始化场景 ----
         function init() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x111111);
-
-            camera = new THREE.PerspectiveCamera(75, visContainer.clientWidth / visContainer.clientHeight, 0.1, 1000);
-            camera.position.z = 5;
-
+            camera = new THREE.PerspectiveCamera(60, visContainer.clientWidth / visContainer.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0, 10);
             renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(visContainer.clientWidth, visContainer.clientHeight);
             visContainer.appendChild(renderer.domElement);
-
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
-
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
             scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLight.position.set(5, 5, 5).normalize();
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
+            directionalLight.position.set(5, 10, 7.5);
             scene.add(directionalLight);
-
             animate();
-            loader.style.display = 'none';
         }
-        
-        // ---- 清理场景 ----
-        function clearScene() {
+
+        function cleanup() {
+            if (gui) {
+                gui.destroy();
+                gui = null;
+            }
             if (currentObject) {
                 scene.remove(currentObject);
                 currentObject.traverse(child => {
                     if (child.geometry) child.geometry.dispose();
                     if (child.material) {
-                        if (Array.isArray(child.material)) {
-                            child.material.forEach(m => m.dispose());
-                        } else {
-                            child.material.dispose();
-                        }
+                        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                        else child.material.dispose();
                     }
                 });
             }
+            currentObject = null;
         }
 
-        // ---- 可视化函数 ----
-        function showTopology() {
-            clearScene();
-            const geometry = new THREE.TorusGeometry(2, 0.5, 32, 100);
-            const material = new THREE.MeshStandardMaterial({ color: 0x2196f3, wireframe: true });
-            const torus = new THREE.Mesh(geometry, material);
-            scene.add(torus);
-            currentObject = torus;
+        let params;
+        let time = 0;
 
-            // 保存原始顶点位置
-            currentObject.userData.originalVertices = Array.from(geometry.attributes.position.array);
-            currentObject.userData.time = 0;
-
-            camera.position.set(0, 0, 5);
-            controls.update();
+        function createGUI() {
+            if (gui) gui.destroy();
+            gui = new GUI({ container: visContainer });
         }
 
-        function showAffine() {
-            clearScene();
-            const grid = new THREE.GridHelper(4, 10, 0x888888, 0x444444);
-            grid.rotation.x = Math.PI / 2;
-            scene.add(grid);
-            currentObject = grid;
-            
-            // 应用一个剪切变换矩阵
-            const shearMatrix = new THREE.Matrix4();
-            // a, b, c, d
-            // x' = x + ky
-            // y' = y
-            const k = 0.5; // shear factor
-            shearMatrix.set(
-                1, k, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1
-            );
-            currentObject.applyMatrix4(shearMatrix);
-            
-            camera.position.set(0, 0, 5);
-            controls.update();
-        }
-
-        function showDifferentiable() {
-            clearScene();
-            const geometry = new THREE.SphereGeometry(2, 64, 32); // 用球面作为光滑流形的例子
-            const material = new THREE.MeshStandardMaterial({ 
-                color: 0x00ff88, 
-                roughness: 0.5, 
-                metalness: 0.1 
-            });
-            const manifold = new THREE.Mesh(geometry, material);
-            scene.add(manifold);
-            currentObject = manifold;
-            camera.position.set(0, 0, 5);
-            controls.update();
-        }
-
-        function showMetric() {
-            clearScene();
-            const group = new THREE.Group();
-            
-            // 球体
-            const sphereGeom = new THREE.SphereGeometry(2, 64, 32);
-            const sphereMat = new THREE.MeshStandardMaterial({ 
-                color: 0xffffff, 
-                transparent: true, 
-                opacity: 0.2 
-            });
-            const sphere = new THREE.Mesh(sphereGeom, sphereMat);
-            group.add(sphere);
-
-            // 测地线 (大圆弧)
-            const curve = new THREE.CatmullRomCurve3([
-                new THREE.Vector3(2, 0, 0),
-                new THREE.Vector3(0, 2, 0).normalize().multiplyScalar(2),
-                new THREE.Vector3(-2, 0, 0),
-            ]);
-            const points = curve.getPoints(50);
-            const lineGeom = new THREE.BufferGeometry().setFromPoints(points);
-            const lineMat = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 3 });
-            const geodesic = new THREE.Line(lineGeom, lineMat);
-            group.add(geodesic);
-            
-            scene.add(group);
-            currentObject = group;
-            camera.position.set(0, 0, 5);
-            controls.update();
-        }
-
-        // ---- 动画循环 ----
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // 特定于拓扑的动画：顶点变形
-            if (currentObject && currentObject.userData.originalVertices) {
-                currentObject.userData.time += 0.01;
-                const time = currentObject.userData.time;
+        function showHomeomorphism() {
+            params = { deformation: 0.2 };
+            createGUI();
+            gui.add(params, 'deformation', 0, 0.8).name('形变强度');
+            const geometry = new THREE.TorusKnotGeometry(2.5, 0.8, 100, 16);
+            geometry.userData.originalVertices = geometry.attributes.position.array.slice();
+            const material = new THREE.MeshNormalMaterial();
+            currentObject = new THREE.Mesh(geometry, material);
+            currentObject.userData.update = () => {
+                time += 0.01;
                 const positions = currentObject.geometry.attributes.position.array;
-                const original = currentObject.userData.originalVertices;
-
+                const original = currentObject.geometry.userData.originalVertices;
                 for (let i = 0; i < positions.length; i += 3) {
                     const x = original[i];
                     const y = original[i+1];
-                    const z = original[i+2];
-                    positions[i] = x + 0.1 * Math.sin(y * 2 + time);
-                    positions[i+1] = y + 0.1 * Math.cos(x * 2 + time);
+                    const noise = 0.5 * Math.sin(y * 2 + time) + 0.5 * Math.cos(x * 1.5 + time);
+                    positions[i] = x + params.deformation * noise;
+                    positions[i+1] = y + params.deformation * noise;
                 }
                 currentObject.geometry.attributes.position.needsUpdate = true;
                 currentObject.geometry.computeVertexNormals();
-            }
+            };
+            scene.add(currentObject);
+        }
 
+        function showAffine() {
+            params = { rotationX: 0, rotationY: 0, scaleX: 1, scaleY: 1, scaleZ: 1, shearXY: 0 };
+            createGUI();
+            
+            // 创建一个带分段的立方体几何体
+            const geometry = new THREE.BoxGeometry(4, 4, 4, 10, 10, 10);
+            // 使用线框材质
+            const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+            
+            currentObject = new THREE.Mesh(geometry, material);
+            currentObject.matrixAutoUpdate = false;
+            
+            const updateTransform = () => {
+                const rotXMatrix = new THREE.Matrix4().makeRotationX(params.rotationX);
+                const rotYMatrix = new THREE.Matrix4().makeRotationY(params.rotationY);
+                const scaleMatrix = new THREE.Matrix4().makeScale(params.scaleX, params.scaleY, params.scaleZ);
+                const shearMatrix = new THREE.Matrix4().set(1, params.shearXY, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+                
+                // 变换顺序: scale -> shear -> rotate
+                currentObject.matrix.identity()
+                    .multiply(rotYMatrix)
+                    .multiply(rotXMatrix)
+                    .multiply(shearMatrix)
+                    .multiply(scaleMatrix);
+            };
+
+            gui.add(params, 'rotationX', -Math.PI, Math.PI).name('旋转 X').onChange(updateTransform);
+            gui.add(params, 'rotationY', -Math.PI, Math.PI).name('旋转 Y').onChange(updateTransform);
+            gui.add(params, 'scaleX', 0.1, 2).name('缩放 s_x').onChange(updateTransform);
+            gui.add(params, 'scaleY', 0.1, 2).name('缩放 s_y').onChange(updateTransform);
+            gui.add(params, 'scaleZ', 0.1, 2).name('缩放 s_z').onChange(updateTransform);
+            gui.add(params, 'shearXY', -1, 1).name('剪切 k_xy').onChange(updateTransform);
+            
+            updateTransform();
+            scene.add(currentObject);
+        }
+        
+        function showDiffeomorphism() {
+            params = { amplitude: 0.5, frequency: 1.0 };
+            createGUI();
+            // 创建一个带很多分段的立方体
+            const geometry = new THREE.BoxGeometry(5, 5, 5, 20, 20, 20);
+            geometry.userData.originalVertices = geometry.attributes.position.array.slice();
+            const material = new THREE.MeshNormalMaterial({ wireframe: true });
+            currentObject = new THREE.Mesh(geometry, material);
+
+            const update = () => {
+                const positions = currentObject.geometry.attributes.position.array;
+                const original = currentObject.geometry.userData.originalVertices;
+                for (let i = 0; i < positions.length; i += 3) {
+                    const ox = original[i];
+                    const oy = original[i+1];
+                    const oz = original[i+2];
+                    
+                    // 应用一个三维的平滑扭曲函数
+                    positions[i] = ox + params.amplitude * Math.sin(params.frequency * oy);
+                    positions[i+1] = oy + params.amplitude * Math.sin(params.frequency * oz);
+                    positions[i+2] = oz + params.amplitude * Math.sin(params.frequency * ox);
+                }
+                currentObject.geometry.attributes.position.needsUpdate = true;
+                currentObject.geometry.computeVertexNormals(); // 更新法线以获得正确的光照
+            };
+
+            gui.add(params, 'amplitude', 0, 2).name('波幅 A').onChange(update);
+            gui.add(params, 'frequency', 0, 5).name('频率 k').onChange(update);
+            update();
+            scene.add(currentObject);
+        }
+
+        function showIsometry() {
+            params = { rotationX: 0, rotationY: 0, translationX: 0, translationY: 0, translationZ: 0 };
+            createGUI();
+            
+            // 创建一个与仿射变换中类似的立方体网格，但使用不同颜色以作区分
+            const geometry = new THREE.BoxGeometry(4, 4, 4, 10, 10, 10);
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ff88, wireframe: true });
+
+            currentObject = new THREE.Mesh(geometry, material);
+            currentObject.matrixAutoUpdate = false;
+
+            const updateTransform = () => {
+                const rotXMatrix = new THREE.Matrix4().makeRotationX(params.rotationX);
+                const rotYMatrix = new THREE.Matrix4().makeRotationY(params.rotationY);
+                const transMatrix = new THREE.Matrix4().makeTranslation(params.translationX, params.translationY, params.translationZ);
+                
+                // 变换顺序: 先在原点旋转，后平移
+                currentObject.matrix.identity()
+                    .multiply(transMatrix)
+                    .multiply(rotYMatrix)
+                    .multiply(rotXMatrix);
+            };
+
+            gui.add(params, 'rotationX', -Math.PI, Math.PI).name('旋转 X').onChange(updateTransform);
+            gui.add(params, 'rotationY', -Math.PI, Math.PI).name('旋转 Y').onChange(updateTransform);
+            gui.add(params, 'translationX', -2, 2).name('平移 X').onChange(updateTransform);
+            gui.add(params, 'translationY', -2, 2).name('平移 Y').onChange(updateTransform);
+            gui.add(params, 'translationZ', -2, 2).name('平移 Z').onChange(updateTransform);
+            
+            updateTransform();
+            scene.add(currentObject);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (currentObject && currentObject.userData.update) {
+                currentObject.userData.update();
+            }
             controls.update();
             renderer.render(scene, camera);
         }
         
-        // ---- 事件绑定 ----
-        function updateDescription(key) {
-             document.getElementById('structure-title').innerText = descriptions[key].title;
-             document.getElementById('structure-description').innerText = descriptions[key].text;
+        function setupUI() {
+            const btnMap = { 'homeomorphism': showHomeomorphism, 'affine': showAffine, 'diffeomorphism': showDiffeomorphism, 'isometry': showIsometry };
+            document.querySelectorAll('.control-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const key = e.target.id.split('-')[1];
+                    cleanup();
+                    // 重置相机和控制器
+                    camera.position.set(0, 0, 10);
+                    controls.target.set(0, 0, 0);
+                    
+                    btnMap[key]();
 
-             document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
-             document.getElementById('btn-' + key).classList.add('active');
+                    document.getElementById('structure-title').innerHTML = descriptions[key].title;
+                    document.getElementById('structure-description').innerHTML = descriptions[key].text;
+                    if(window.MathJax) { MathJax.typesetPromise([document.getElementById('structure-description')]); }
+                    document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                });
+            });
         }
-
-        document.getElementById('btn-topology').addEventListener('click', () => {
-            showTopology();
-            updateDescription('topology');
-        });
-        document.getElementById('btn-affine').addEventListener('click', () => {
-            showAffine();
-            updateDescription('affine');
-        });
-        document.getElementById('btn-differentiable').addEventListener('click', () => {
-            showDifferentiable();
-            updateDescription('differentiable');
-        });
-        document.getElementById('btn-metric').addEventListener('click', () => {
-            showMetric();
-            updateDescription('metric');
-        });
         
-        // 窗口大小调整
         window.addEventListener('resize', () => {
             camera.aspect = visContainer.clientWidth / visContainer.clientHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(visContainer.clientWidth, visContainer.clientHeight);
         });
 
-        // ---- 启动 ----
         init();
-        // 默认显示第一个
-        document.getElementById('btn-topology').click();
+        setupUI();
+        MathJax.startup.promise.then(() => {
+            document.getElementById('btn-homeomorphism').click();
+        });
 
     </script>
 </body>
